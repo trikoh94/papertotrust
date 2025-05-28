@@ -178,6 +178,16 @@ export default async function handler(req, res) {
 
         const mistralData = await mistralRes.json();
         console.log('Mistral OCR API response:', mistralData);
+
+        // Check Cloudinary URL access
+        try {
+          const headRes = await axios.head(cloudinaryUrl);
+          console.log('Cloudinary URL HEAD response:', headRes.status);
+          // 200이면 접근 가능, 400/401/403/404 등은 접근 불가
+        } catch (err) {
+          console.error('Cloudinary URL HEAD error:', err.response?.status, err.message);
+        }
+
         return res.status(200).json({ result: mistralData });
       } catch (error) {
         console.error('Error processing file:', error);
