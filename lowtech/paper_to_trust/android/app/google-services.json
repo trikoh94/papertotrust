@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "5865161016",
+    "project_id": "papertotrust",
+    "storage_bucket": "papertotrust.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:5865161016:android:c1aac7b900bfad3fc2c1cd",
+        "android_client_info": {
+          "package_name": "com.example.paper_to_trust"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2kcfHrFJ7oYTMiVNnfoPyfN5oOuYPTlI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
