@@ -21,35 +21,25 @@ class EntryDetailsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                entry.imageUrl,
+            if (entry.ocrText != null) ...[
+              Container(
                 width: double.infinity,
-                height: 300,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: double.infinity,
-                    height: 300,
-                    color: Colors.grey[300],
-                    child: const Icon(
-                      Icons.error,
-                      size: 48,
-                      color: Colors.grey,
-                    ),
-                  );
-                },
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  entry.ocrText!,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
+            ],
             _buildInfoSection('メモ', entry.note ?? 'メモなし'),
             const SizedBox(height: 16),
             _buildInfoSection('ステータス', entry.status),
-            if (entry.ocrText != null) ...[
-              const SizedBox(height: 16),
-              _buildInfoSection('OCRテキスト', entry.ocrText!),
-            ],
             if (entry.reviewNote != null) ...[
               const SizedBox(height: 16),
               _buildInfoSection('確認メモ', entry.reviewNote!),

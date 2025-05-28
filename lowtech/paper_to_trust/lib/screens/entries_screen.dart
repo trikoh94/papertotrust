@@ -84,33 +84,32 @@ class _EntriesScreenState extends State<EntriesScreen> {
                     vertical: 8,
                   ),
                   child: ListTile(
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Image.network(
-                        entry.imageUrl,
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 60,
-                            height: 60,
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.error),
-                          );
-                        },
-                      ),
-                    ),
+                    leading: const Icon(Icons.description),
                     title: Text(
                       entry.note ?? 'メモなし',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    subtitle: Text(
-                      'ステータス: ${_getStatusText(entry.status)}',
-                      style: TextStyle(
-                        color: _getStatusColor(entry.status),
-                      ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ステータス: ${_getStatusText(entry.status)}',
+                          style: TextStyle(
+                            color: _getStatusColor(entry.status),
+                          ),
+                        ),
+                        if (entry.ocrText != null)
+                          Text(
+                            entry.ocrText!.length > 30
+                                ? entry.ocrText!.substring(0, 30) + '...'
+                                : entry.ocrText!,
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.grey),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
                     ),
                     trailing: Text(
                       _formatDate(entry.createdAt),

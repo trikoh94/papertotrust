@@ -3,7 +3,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart'; // kIsWeb
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
@@ -13,9 +12,8 @@ import 'providers/ledger_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(); // <<< 이 줄 추가하세요
   try {
     debugPrint('Initializing Firebase...');
     await Firebase.initializeApp(
@@ -24,14 +22,6 @@ void main() async {
     debugPrint('Firebase initialized successfully.');
   } catch (e, stack) {
     debugPrint('Firebase initialize error: $e\n$stack');
-  }
-
-  try {
-    debugPrint('Loading .env file...');
-    await dotenv.load(fileName: ".env");
-    debugPrint('.env loaded successfully.');
-  } catch (e, stack) {
-    debugPrint('Dotenv load error: $e\n$stack');
   }
 
   try {

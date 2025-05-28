@@ -2,19 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
-import '../services/cloudinary_service.dart';
-import '../services/ocr_service.dart';
 import '../services/camera_service.dart';
-import '../services/ocr_web_service.dart';
 import '../services/ocr_parser_jp.dart';
 import '../models/ledger_entry.dart';
-import '../services/cloudinary_web_service.dart';
-import 'package:universal_html/html.dart' as html;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LedgerProvider with ChangeNotifier {
-  final CloudinaryService _cloudinaryService = CloudinaryService();
-
   final CameraService _cameraService = CameraService();
 
   List<LedgerEntry> _entries = [];
@@ -81,6 +75,48 @@ class LedgerProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  static const String apiUrl = String.fromEnvironment('OCR_API_URL');
+
+  Future<String> uploadImageForOCR(XFile imageFile) async {
+    debugPrint('OCR_API_URL: $apiUrl');
+    var request = http.MultipartRequest('POST', Uri.parse(apiUrl));
+
+    if (kIsWeb) {
+      // 웹에서는 bytes로 읽어서 업로드
+      final bytes = await imageFile.readAsBytes();
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: imageFile.name,
+        ),
+      );
+    } else {
+      // 모바일/데스크탑에서는 fromPath 사용
+      request.files.add(
+        await http.MultipartFile.fromPath('file', imageFile.path),
+      );
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    debugPrint('Mistral OCR API status: ${response.statusCode}');
+    debugPrint('Mistral OCR API response: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      debugPrint('Decoded response: $data');
+      if (data['result'] != null) {
+        return data['result'].toString();
+      } else {
+        throw Exception('Unexpected null value in OCR result');
+      }
+    } else {
+      throw Exception('Failed to get OCR result');
+    }
+  }
+
   Future<void> processImage() async {
     if (_selectedImage == null) return;
 
@@ -89,36 +125,10 @@ class LedgerProvider with ChangeNotifier {
       _lastResponse = null;
       notifyListeners();
 
-      String uploadedUrl;
-      if (kIsWeb) {
-        final cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME'] ?? '';
-        final uploadPreset = dotenv.env['CLOUDINARY_UPLOAD_PRESET'] ?? '';
-        if (cloudName.isEmpty || uploadPreset.isEmpty) {
-          throw Exception('Cloudinary 환경변수가 비어있습니다');
-        }
-        final uploadInput = html.FileUploadInputElement()..accept = 'image/*';
-        uploadInput.click();
-        await uploadInput.onChange.first;
-        if (uploadInput.files == null || uploadInput.files!.isEmpty) {
-          throw Exception('웹 파일 객체를 찾을 수 없습니다');
-        }
-        final file = uploadInput.files!.first;
-        final cloudinaryWeb = CloudinaryWebService(
-          cloudName: cloudName,
-          uploadPreset: uploadPreset,
-        );
-        uploadedUrl = await cloudinaryWeb.uploadHtmlFile(file);
-      } else {
-        final file = File(_selectedImage!.path);
-        uploadedUrl = await _cloudinaryService.uploadImage(
-          file,
-          note: _note,
-        );
-      }
-      _ocrText = await recognizeTextWeb(uploadedUrl, lang: 'jpn');
+      _ocrText = await uploadImageForOCR(_selectedImage!);
       final ledger = parseLedgerTextJp(_ocrText!);
       _parsedResult = ledger.toString();
-      await saveLedgerToFirestore(ledger, uploadedUrl, _ocrText!);
+      await saveLedgerToFirestore(ledger, _ocrText!);
       _lastResponse = '画像の処理と保存が完了しました';
       await loadEntries();
     } catch (e) {
@@ -130,15 +140,14 @@ class LedgerProvider with ChangeNotifier {
   }
 
   Future<void> saveLedgerToFirestore(
-      LedgerDataJp ledger, String imageUrl, String ocrText) async {
+      LedgerDataJp ledger, String ocrText) async {
     await FirebaseFirestore.instance.collection('ledgers').add({
-      'imageUrl': imageUrl,
+      'ocrText': ocrText,
       'date': ledger.date?.toIso8601String(),
       'income': ledger.income,
       'expense': ledger.expense,
       'balance': ledger.balance,
       'memo': ledger.memo,
-      'ocrText': ocrText,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
